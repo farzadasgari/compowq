@@ -20,10 +20,14 @@ thresholds:
     heat_pct: 90
     drought_pct: 10
     compound_pct: 10
-  secondary:
+  lenient:
     heat_pct: 85
     drought_pct: 15
-    compound_pct: 12
+    compound_pct: 15
+  strict:
+    heat_pct: 95
+    drought_pct: 5
+    compound_pct: 5
 
 gap_filling:
   max_gap_days: 10
