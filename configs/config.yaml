@@ -1,0 +1,17 @@
+paths:
+  raw_wq: data/raw/wq.csv
+  raw_climate: data/raw/cl.csv
+  processed_dir: data/processed
+  figures_dir: results/figures
+  tables_dir: results/tables
+
+thresholds:
+  primary:
+    heat_pct: 90
+    drought_pct: 10
+    compound_pct: 10
+
+indices:
+  sti: {}
+  sapei: {}
+  scdhi: {}

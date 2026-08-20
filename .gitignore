@@ -1,0 +1,39 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+*.egg
+.Python
+
+# --- Virtual environments ---
+.venv/
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# --- Restricted data ---
+# cl.csv is obtained under agreement from a government meteorological organization
+data/raw/cl.csv
+data/raw/wq.csv
+
+# --- Generated outputs ---
+data/processed/*
+!data/processed/.gitkeep
+
+results/figures/*
+!results/figures/.gitkeep
+
+results/tables/*
+!results/tables/.gitkeep
+
+# --- Secrets ---
+.env
