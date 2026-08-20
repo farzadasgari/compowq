@@ -5,13 +5,42 @@ paths:
   figures_dir: results/figures
   tables_dir: results/tables
 
+station:
+  name: Zahak
+  network: Iran Meteorological Organization
+  station_id: "99623"
+  latitude_deg: 30.900
+  longitude_deg: 61.6833
+  elevation_m: 495
+events:
+  heatwave_durations_days: [3, 5, 7]
+
 thresholds:
   primary:
     heat_pct: 90
     drought_pct: 10
     compound_pct: 10
+  secondary:
+    heat_pct: 85
+    drought_pct: 15
+    compound_pct: 12
+
+gap_filling:
+  max_gap_days: 10
+  methods:
+    tmean: linear
+    tmax: linear
+    tmin: linear
+    precipitation: none
+  available_methods: [linear, climatology, ffill, none] 
 
 indices:
   sti: {}
-  sapei: {}
-  scdhi: {}
+  sapei:
+    window_days:
+      3: 90
+      6: 180
+      9: 270
+      12: 360
+  scdhi:
+    copula_family: frank
