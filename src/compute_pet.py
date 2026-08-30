@@ -1,9 +1,3 @@
-"""
-Compute potential evapotranspiration (PET).
-Run:
-    python -m src.compute_pet --config configs/config.yaml
-"""
-
 import argparse
 from pathlib import Path
 
@@ -37,9 +31,7 @@ def compute_pet(tmean: pd.Series, dates: pd.Series, latitude_deg: float) -> pd.S
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Compute PET from tmean, date, and station latitude"
-    )
+    parser = argparse.ArgumentParser(description="Compute PET from tmean, date, and station latitude")
     parser.add_argument("--config", default="configs/config.yaml")
     args = parser.parse_args()
 
@@ -54,9 +46,7 @@ def main() -> None:
 
     station_cfg = cfg.get("station", {})
     if "latitude_deg" not in station_cfg:
-        raise SystemExit(
-            "ERROR: configs/config.yaml is missing station.latitude_deg."
-        )
+        raise SystemExit("ERROR: configs/config.yaml is missing station.latitude_deg.")
     latitude_deg = float(station_cfg["latitude_deg"])
 
     df = pd.read_csv(filled_path, parse_dates=["date"])
@@ -65,16 +55,13 @@ def main() -> None:
     df["pet"] = compute_pet(df["tmean"], df["date"], latitude_deg)
 
     n_valid = df["pet"].notna().sum()
-    print(
-        f"PET computed for {n_valid}/{len(df)} days (station latitude {latitude_deg} deg N)."
-    )
+    print(f"PET computed for {n_valid}/{len(df)} days (station latitude {latitude_deg} deg N).")
     print(f"  PET range: {df['pet'].min():.3f} to {df['pet'].max():.3f}")
     if "pet_raw_prior" in df.columns:
         both = df[["pet", "pet_raw_prior"]].dropna()
         if len(both):
             corr = both["pet"].corr(both["pet_raw_prior"])
-            print(
-                f"  correlation with the prior (untrusted) pet column: {corr:.3f} (n={len(both)})")
+            print(f"  correlation with the prior (untrusted) pet column: {corr:.3f} (n={len(both)})")
 
     out_path = processed_dir / "climate_with_pet.csv"
     df.to_csv(out_path, index=False)
