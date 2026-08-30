@@ -1,6 +1,6 @@
 """
 Compute the daily-scale Standardized Antecedent Precipitation Evapotranspiration
-Index (SAPEI).
+Index (SAPEI) at four antecedent timescales (3, 6, 9, 12 "months").
 
 Run:
     python -m src.compute_sapei --config configs/config.yaml
@@ -17,14 +17,14 @@ from scipy.stats import norm
 from src.data_loading import load_config
 
 DEFAULT_WINDOW_DAYS = {3: 90, 6: 180, 9: 270, 12: 360}
+DEFAULT_CLIMATOLOGY_WINDOW_DAYS = 15
 
 
 def fit_loglogistic_lmoments(x: np.ndarray) -> tuple:
     x = np.sort(np.asarray(x, dtype=float))
     n = len(x)
     if n < 10:
-        raise ValueError(
-            f"Too few samples ({n}) to fit a log-logistic distribution.")
+        raise ValueError(f"Too few samples ({n}) to fit a log-logistic distribution.")
     i = np.arange(1, n + 1)
 
     w0 = np.mean(x)
@@ -48,35 +48,51 @@ def compute_water_balance(df: pd.DataFrame) -> pd.Series:
     return df["precipitation"] - df["pet"]
 
 
-def compute_sapei_for_window(df: pd.DataFrame, water_balance: pd.Series, window_days: int) -> pd.Series:
-    accum = water_balance.rolling(
-        window=window_days, min_periods=window_days).sum()
-
-    sapei = pd.Series(index=df.index, dtype=float)
-    months = df["date"].dt.month
-    for m in range(1, 13):
-        mask = (months == m) & accum.notna()
-        n_valid = int(mask.sum())
-        if n_valid < 10:
-            continue  # not enough data to fit this month -- leave as NaN
-        alpha, beta, gamma_param = fit_loglogistic_lmoments(accum[mask].values)
-        f = loglogistic_cdf(accum[mask].values, alpha, beta, gamma_param)
-        f = np.clip(f, 1e-10, 1 - 1e-10)  # guard exact 0/1 -> +/- inf
-        sapei[mask] = norm.ppf(f)
-    return sapei
+def pseudo_doy(dates: pd.Series) -> np.ndarray:
+    month = dates.dt.month.values
+    day = dates.dt.day.values
+    day = np.where((month == 2) & (day == 29), 28, day)
+    ref = pd.to_datetime({"year": 2001, "month": month, "day": day})
+    return ref.dt.dayofyear.values
 
 
-def compute_sapei(df: pd.DataFrame, window_days: dict) -> pd.DataFrame:
+def compute_sapei_for_window(
+    df: pd.DataFrame, water_balance: pd.Series, window_days: int, climatology_window_days: int = DEFAULT_CLIMATOLOGY_WINDOW_DAYS
+) -> pd.Series:
+    accum = water_balance.rolling(window=window_days, min_periods=window_days).sum()
+    doy = pseudo_doy(df["date"])
+    accum_vals = accum.values
+    valid = ~np.isnan(accum_vals)
+
+    sapei_vals = np.full(len(df), np.nan)
+
+    for target_doy in range(1, 366):
+        dist = np.abs(doy - target_doy)
+        dist = np.minimum(dist, 365 - dist)
+        window_mask = (dist <= climatology_window_days) & valid
+        target_mask = (doy == target_doy) & valid
+
+        if target_mask.sum() == 0 or window_mask.sum() < 10:
+            continue
+
+        alpha, beta, gamma_param = fit_loglogistic_lmoments(accum_vals[window_mask])
+        f = loglogistic_cdf(accum_vals[target_mask], alpha, beta, gamma_param)
+        f = np.clip(f, 1e-10, 1 - 1e-10)
+        sapei_vals[target_mask] = norm.ppf(f)
+
+    return pd.Series(sapei_vals, index=df.index)
+
+
+def compute_sapei(df: pd.DataFrame, window_days: dict, climatology_window_days: int = DEFAULT_CLIMATOLOGY_WINDOW_DAYS) -> pd.DataFrame:
     wb = compute_water_balance(df)
     out = df[["date"]].copy()
     for months, days in window_days.items():
-        out[f"sapei_{months}m"] = compute_sapei_for_window(df, wb, days)
+        out[f"sapei_{months}m"] = compute_sapei_for_window(df, wb, days, climatology_window_days)
     return out
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Compute daily SAPEI at 3/6/9/12-month windows")
+    parser = argparse.ArgumentParser(description="Compute daily SAPEI at 3/6/9/12-month windows")
     parser.add_argument("--config", default="configs/config.yaml")
     args = parser.parse_args()
 
@@ -89,15 +105,16 @@ def main() -> None:
             f"--config {args.config}` first (Step 3.5)."
         )
 
-    window_days = cfg.get("indices", {}).get(
-        "sapei", {}).get("window_days", DEFAULT_WINDOW_DAYS)
+    sapei_cfg = cfg.get("indices", {}).get("sapei", {})
+    window_days = sapei_cfg.get("window_days", DEFAULT_WINDOW_DAYS)
     window_days = {int(k): int(v) for k, v in window_days.items()}
+    climatology_window_days = int(sapei_cfg.get("climatology_window_days", DEFAULT_CLIMATOLOGY_WINDOW_DAYS))
 
     climate = pd.read_csv(pet_path, parse_dates=["date"])
-    sapei = compute_sapei(climate, window_days)
+    sapei = compute_sapei(climate, window_days, climatology_window_days)
 
-    print(
-        f"SAPEI computed {climate['date'].min().date()} -> {climate['date'].max().date()}")
+    print(f"SAPEI computed {climate['date'].min().date()} -> {climate['date'].max().date()}")
+    print(f"Climatology fit window: +/-{climatology_window_days} days (moving, leap-year-safe)")
     for months in sorted(window_days):
         col = f"sapei_{months}m"
         n_valid = sapei[col].notna().sum()
@@ -114,8 +131,7 @@ def main() -> None:
     if wq_path.exists():
         wq = pd.read_csv(wq_path, parse_dates=["date"])
         matched = wq.merge(sapei, on="date", how="left")
-        print(
-            f"\nSanity check -- exact-date match against {len(wq)} Sentinel-2 acquisitions:")
+        print(f"\nSanity check -- exact-date match against {len(wq)} Sentinel-2 acquisitions:")
         for months in sorted(window_days):
             col = f"sapei_{months}m"
             n_matched = matched[col].notna().sum()
