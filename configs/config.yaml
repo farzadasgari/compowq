@@ -12,6 +12,7 @@ station:
   latitude_deg: 30.900
   longitude_deg: 61.6833
   elevation_m: 495
+
 events:
   heatwave_durations_days: [3, 5, 7]
 
@@ -36,7 +37,8 @@ gap_filling:
     tmax: linear
     tmin: linear
     precipitation: none
-  available_methods: [linear, climatology, ffill, none] 
+  available_methods: [linear, climatology, ffill, none]
+
 
 indices:
   sti: {}
@@ -46,5 +48,26 @@ indices:
       6: 180
       9: 270
       12: 360
+    climatology_window_days: 15
   scdhi:
     copula_family: frank
+
+viz:
+  base_font: 22
+  dpi: 600
+  colors:
+    sti: crimson
+    sapei: deepskyblue
+    scdhi: purple
+    heat: crimson
+    drought: deepskyblue
+    compound: purple
+    normal: "0.65"
+    all: "#DAA520"
+    tmean: firebrick
+    precip: steelblue
+    threshold: "0.5"
+    trend: black
+    tsm: "#8B4513"
+    chl_a: "#2E8B57"
+    cdom: "#DAA520"
