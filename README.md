@@ -42,12 +42,7 @@ For any inquiries, please contact:
 - std_farzad.asgari@khu.ac.ir
 
 ## Research Team
-### Farzad Asgari
-<div align="center">
 
-[![github](https://img.shields.io/badge/GitHub-6e5494?style=for-the-badge&logo=github&logoColor=white)](https://github.com/farzadasgari)
-[![Google Scholar Badge](https://img.shields.io/badge/Google%20Scholar-4285F4?logo=googlescholar&logoColor=fff&style=for-the-badge)](https://scholar.google.com/citations?user=Rhue_kkAAAAJ&hl=en)
-[![linkedin](https://custom-icon-badges.demolab.com/badge/linkedin-0A66C2?style=for-the-badge&logo=linkedin-white&logoColor=white)](https://www.linkedin.com/in/farzad-asgari)
-[![ORCID](https://img.shields.io/badge/ORCID-0009--0008--3800--0408-A6CE39?logo=orcid&logoColor=fff&style=for-the-badge)](https://orcid.org/0009-0008-3800-0408)
+Farzad Asgari, Seyed Hossein Mohajeri, Mohammad Reza Nikoo
 
 </div>
